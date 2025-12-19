@@ -34,6 +34,8 @@ a = Analysis(
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
+        'PySide6.QtMultimedia',
+        'PySide6.QtMultimediaWidgets',
         'PIL',
         'PIL.Image',
         'pillow_heif',
@@ -41,6 +43,7 @@ a = Analysis(
         'viewer.main_window',
         'viewer.image_viewer',
         'viewer.thumbnail_strip',
+        'viewer.video_player',
         'utils',
         'utils.image_loader',
         'utils.compressor',
@@ -83,8 +86,7 @@ a = Analysis(
         'PySide6.Qt3DCore', 'PySide6.Qt3DRender', 'PySide6.Qt3DInput',
         'PySide6.Qt3DLogic', 'PySide6.Qt3DAnimation', 'PySide6.Qt3DExtras',
 
-        # 멀티미디어 (이미지 뷰어에 불필요)
-        'PySide6.QtMultimedia', 'PySide6.QtMultimediaWidgets',
+        # 멀티미디어 (QtMultimedia는 동영상 재생에 필요)
         'PySide6.QtSpatialAudio',
 
         # 기타 불필요 모듈

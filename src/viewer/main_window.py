@@ -8,12 +8,14 @@ from typing import Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QMenu, QFileDialog, QMessageBox, QDialog, QComboBox,
-    QPushButton, QGroupBox, QFormLayout, QSpinBox, QDialogButtonBox
+    QPushButton, QGroupBox, QFormLayout, QSpinBox, QDialogButtonBox,
+    QStackedWidget
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QKeySequence, QDragEnterEvent, QDropEvent
 
 from .image_viewer import ImageViewer
+from .video_player import VideoPlayer
 from .thumbnail_strip import ThumbnailStrip
 from utils.image_loader import ImageLoader
 from utils.compressor import ImageCompressor
@@ -166,12 +168,23 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self._info_bar)
 
+        # 스택 위젯 (이미지 뷰어 / 비디오 플레이어 전환용)
+        self._stack = QStackedWidget()
+        layout.addWidget(self._stack, 1)
+
         # 이미지 뷰어
         self._viewer = ImageViewer()
         self._viewer.next_requested.connect(self._next_image)
         self._viewer.prev_requested.connect(self._prev_image)
         self._viewer.fullscreen_toggled.connect(self._toggle_fullscreen)
-        layout.addWidget(self._viewer, 1)
+        self._stack.addWidget(self._viewer)
+
+        # 비디오 플레이어
+        self._video_player = VideoPlayer()
+        self._video_player.next_requested.connect(self._next_image)
+        self._video_player.prev_requested.connect(self._prev_image)
+        self._video_player.fullscreen_toggled.connect(self._toggle_fullscreen)
+        self._stack.addWidget(self._video_player)
 
         # 썸네일 스트립
         self._thumbnail_strip = ThumbnailStrip()
@@ -294,38 +307,30 @@ class MainWindow(QMainWindow):
         self._load_current_image()
 
     def _load_current_image(self):
-        """현재 이미지 로드"""
+        """현재 이미지/동영상 로드"""
         if not self._current_file:
             return
 
         if ImageLoader.is_supported_image(self._current_file):
+            # 이미지 표시
+            self._video_player.stop()
+            self._stack.setCurrentWidget(self._viewer)
             pixmap = ImageLoader.load_image(self._current_file)
             if pixmap:
                 self._viewer.set_image(pixmap)
             else:
                 self._viewer.clear()
         elif ImageLoader.is_supported_video(self._current_file):
-            # 동영상은 시스템 기본 플레이어로 열기
+            # 동영상 재생
             self._viewer.clear()
-            self._open_video_external(self._current_file)
+            self._stack.setCurrentWidget(self._video_player)
+            self._video_player.set_video(self._current_file)
         else:
+            self._video_player.stop()
+            self._stack.setCurrentWidget(self._viewer)
             self._viewer.clear()
 
         self._update_info_bar()
-
-    def _open_video_external(self, file_path: str):
-        """동영상을 시스템 기본 플레이어로 열기"""
-        import subprocess
-        import sys
-        try:
-            if sys.platform == 'win32':
-                os.startfile(file_path)
-            elif sys.platform == 'darwin':
-                subprocess.run(['open', file_path], check=False)
-            else:
-                subprocess.run(['xdg-open', file_path], check=False)
-        except Exception as e:
-            QMessageBox.warning(self, "재생 오류", f"동영상을 열 수 없습니다.\n{e}")
 
     def _update_info_bar(self):
         """정보 바 업데이트"""
@@ -437,5 +442,9 @@ class MainWindow(QMainWindow):
                 self.open_file(file_path)
 
     def keyPressEvent(self, event):
-        """키 이벤트 (뷰어로 전달)"""
-        self._viewer.keyPressEvent(event)
+        """키 이벤트 (현재 위젯으로 전달)"""
+        current_widget = self._stack.currentWidget()
+        if current_widget == self._video_player:
+            self._video_player.keyPressEvent(event)
+        else:
+            self._viewer.keyPressEvent(event)

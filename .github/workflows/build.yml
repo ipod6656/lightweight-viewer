@@ -47,15 +47,16 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Rename executable
+      - name: Prepare distribution
         run: |
           mv dist/LightweightViewer.exe "dist/LightweightViewer-${{ steps.get_version.outputs.version }}-win64.exe"
+          cp run_debug.bat dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: LightweightViewer-${{ steps.get_version.outputs.version }}-win64
-          path: dist/LightweightViewer-${{ steps.get_version.outputs.version }}-win64.exe
+          path: dist/*
           retention-days: 30
 
   release:

@@ -5,9 +5,17 @@ PyInstaller 빌드 설정
 """
 
 import sys
+import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
+
+# PySide6 데이터 파일 수집 (Qt 플러그인 포함)
+pyside6_datas = []
+try:
+    pyside6_datas = collect_data_files('PySide6', include_py_files=False)
+except Exception as e:
+    print(f"Warning: Could not collect PySide6 data files: {e}")
 
 # pillow-heif 데이터 파일 수집
 heif_datas = []
@@ -20,7 +28,7 @@ a = Analysis(
     ['src/main.py'],
     pathex=['src'],  # src 디렉토리를 모듈 검색 경로에 추가
     binaries=[],
-    datas=heif_datas + [
+    datas=pyside6_datas + heif_datas + [
         ('src/viewer', 'viewer'),  # viewer 패키지 포함
         ('src/utils', 'utils'),    # utils 패키지 포함
     ],
@@ -29,6 +37,7 @@ a = Analysis(
         'PySide6.QtGui',
         'PySide6.QtWidgets',
         'PIL',
+        'PIL.Image',
         'pillow_heif',
         # 앱 내부 모듈
         'viewer',

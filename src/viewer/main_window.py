@@ -304,11 +304,28 @@ class MainWindow(QMainWindow):
                 self._viewer.set_image(pixmap)
             else:
                 self._viewer.clear()
+        elif ImageLoader.is_supported_video(self._current_file):
+            # 동영상은 시스템 기본 플레이어로 열기
+            self._viewer.clear()
+            self._open_video_external(self._current_file)
         else:
-            # 동영상은 아직 미지원
             self._viewer.clear()
 
         self._update_info_bar()
+
+    def _open_video_external(self, file_path: str):
+        """동영상을 시스템 기본 플레이어로 열기"""
+        import subprocess
+        import sys
+        try:
+            if sys.platform == 'win32':
+                os.startfile(file_path)
+            elif sys.platform == 'darwin':
+                subprocess.run(['open', file_path], check=False)
+            else:
+                subprocess.run(['xdg-open', file_path], check=False)
+        except Exception as e:
+            QMessageBox.warning(self, "재생 오류", f"동영상을 열 수 없습니다.\n{e}")
 
     def _update_info_bar(self):
         """정보 바 업데이트"""

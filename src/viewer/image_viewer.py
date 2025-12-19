@@ -79,13 +79,19 @@ class ImageViewer(QWidget):
 
     def zoom_in(self):
         """확대"""
-        self._fit_mode = False
+        if self._fit_mode:
+            # fit 모드에서 첫 확대 시 현재 fit_zoom을 기준으로 시작
+            self._zoom = self._calculate_fit_zoom()
+            self._fit_mode = False
         self._zoom = min(self._zoom * self.ZOOM_STEP, self.MAX_ZOOM)
         self.update()
 
     def zoom_out(self):
         """축소"""
-        self._fit_mode = False
+        if self._fit_mode:
+            # fit 모드에서 첫 축소 시 현재 fit_zoom을 기준으로 시작
+            self._zoom = self._calculate_fit_zoom()
+            self._fit_mode = False
         self._zoom = max(self._zoom / self.ZOOM_STEP, self.MIN_ZOOM)
         self.update()
 

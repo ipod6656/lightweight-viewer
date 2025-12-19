@@ -64,7 +64,7 @@ a = Analysis(
         'doctest',
         'argparse',
         'difflib',
-        'inspect',
+        # 'inspect',  # PySide6/shiboken에서 필요함 - 제외하지 않음
         'calendar',
         'distutils',
         'setuptools',

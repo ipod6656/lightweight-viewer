@@ -1,5 +1,5 @@
 """
-썸네일 스트립 - 비동기 로딩, 가상 스크롤 지원
+썸네일 스트립 - 비동기 로딩, 가상 스크롤 지원, 높이 조절 가능
 """
 from typing import List, Optional
 from PySide6.QtWidgets import (
@@ -7,9 +7,65 @@ from PySide6.QtWidgets import (
     QSizePolicy, QVBoxLayout
 )
 from PySide6.QtCore import Qt, Signal, QSize, QThreadPool, QTimer
-from PySide6.QtGui import QPixmap, QPainter, QColor, QPen, QFont
+from PySide6.QtGui import QPixmap, QPainter, QColor, QPen, QFont, QMouseEvent
 
 from utils.image_loader import ImageLoader, ThumbnailWorker, ThumbnailCache
+
+
+class ResizeHandle(QWidget):
+    """썸네일 스트립 상단 리사이즈 핸들"""
+
+    HEIGHT = 6
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(self.HEIGHT)
+        self.setCursor(Qt.CursorShape.SplitVCursor)
+        self._dragging = False
+        self._start_y = 0
+        self._start_height = 0
+        self.setStyleSheet("""
+            ResizeHandle {
+                background-color: #0a0a0a;
+            }
+            ResizeHandle:hover {
+                background-color: #1a1a1a;
+            }
+        """)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # 그립 라인 그리기 (중앙에 3개의 점선)
+        center_x = self.width() // 2
+        y = self.HEIGHT // 2
+
+        painter.setPen(QPen(QColor('#404040'), 1))
+        for offset in [-20, 0, 20]:
+            painter.drawLine(center_x + offset - 8, y, center_x + offset + 8, y)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = True
+            self._start_y = event.globalPosition().y()
+            self._start_height = self.parent().height()
+            event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if self._dragging:
+            delta = self._start_y - event.globalPosition().y()
+            new_height = int(self._start_height + delta)
+            parent = self.parent()
+            if parent and hasattr(parent, 'set_strip_height'):
+                parent.set_strip_height(new_height)
+            event.accept()
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = False
+            event.accept()
 
 
 class ThumbnailItem(QFrame):
@@ -48,12 +104,12 @@ class ThumbnailItem(QFrame):
         else:
             self.setStyleSheet("""
                 ThumbnailItem {
-                    background-color: #2d2d2d;
+                    background-color: #1a1a1a;
                     border: 2px solid transparent;
                     border-radius: 4px;
                 }
                 ThumbnailItem:hover {
-                    border: 2px solid #555555;
+                    border: 2px solid #404040;
                 }
             """)
 
@@ -137,6 +193,9 @@ class ThumbnailStrip(QWidget):
     item_selected = Signal(int, str)  # index, file_path
 
     VISIBLE_BUFFER = 5  # 화면 밖 버퍼 (가상 스크롤용)
+    MIN_HEIGHT = 80
+    MAX_HEIGHT = 300
+    DEFAULT_HEIGHT = ThumbnailItem.THUMB_SIZE + 24 + ResizeHandle.HEIGHT
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -146,6 +205,7 @@ class ThumbnailStrip(QWidget):
         self._cache = ThumbnailCache(max_items=500, max_memory_mb=100)
         self._thread_pool = QThreadPool.globalInstance()
         self._pending_workers: dict = {}  # {path: worker}
+        self._current_height = self.DEFAULT_HEIGHT
 
         self._setup_ui()
 
@@ -154,19 +214,26 @@ class ThumbnailStrip(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # 리사이즈 핸들 (상단)
+        self._resize_handle = ResizeHandle(self)
+        layout.addWidget(self._resize_handle)
+
         # 스크롤 영역
         self._scroll_area = QScrollArea()
         self._scroll_area.setWidgetResizable(True)
         self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll_area.setFixedHeight(ThumbnailItem.THUMB_SIZE + 24)
         self._scroll_area.setStyleSheet("""
             QScrollArea {
-                background-color: #1a1a1a;
+                background-color: #0a0a0a;
                 border: none;
-                border-top: 1px solid #333333;
             }
         """)
+
+        # 최소/최대 높이 설정 (fixedHeight 대신)
+        self.setMinimumHeight(self.MIN_HEIGHT)
+        self.setMaximumHeight(self.MAX_HEIGHT)
+        self.setFixedHeight(self.DEFAULT_HEIGHT)
 
         # 컨테이너
         self._container = QWidget()
@@ -334,3 +401,9 @@ class ThumbnailStrip(QWidget):
 
     def get_file_count(self) -> int:
         return len(self._files)
+
+    def set_strip_height(self, height: int):
+        """높이 설정 (드래그 리사이즈용)"""
+        height = max(self.MIN_HEIGHT, min(self.MAX_HEIGHT, height))
+        self._current_height = height
+        self.setFixedHeight(height)

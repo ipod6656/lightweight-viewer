@@ -62,7 +62,7 @@ a = Analysis(
         'xml',
         'pydoc',
         'doctest',
-        'argparse',
+        # 'argparse',  # PySide6/shibokensupport에서 필요함 - 제외하지 않음
         'difflib',
         # 'inspect',  # PySide6/shiboken에서 필요함 - 제외하지 않음
         'calendar',

@@ -18,15 +18,27 @@ except Exception:
 
 a = Analysis(
     ['src/main.py'],
-    pathex=[],
+    pathex=['src'],  # src 디렉토리를 모듈 검색 경로에 추가
     binaries=[],
-    datas=heif_datas,
+    datas=heif_datas + [
+        ('src/viewer', 'viewer'),  # viewer 패키지 포함
+        ('src/utils', 'utils'),    # utils 패키지 포함
+    ],
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
         'PIL',
         'pillow_heif',
+        # 앱 내부 모듈
+        'viewer',
+        'viewer.main_window',
+        'viewer.image_viewer',
+        'viewer.thumbnail_strip',
+        'utils',
+        'utils.image_loader',
+        'utils.compressor',
+        'utils.theme',
     ],
     hookspath=[],
     hooksconfig={},
@@ -114,7 +126,7 @@ exe = EXE(
     upx=True,  # UPX 압축 활성화 (용량 감소)
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # GUI 앱 (콘솔 창 없음)
+    console=True,  # 디버깅용 콘솔 활성화 (문제 해결 후 False로 변경)
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

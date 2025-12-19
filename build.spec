@@ -53,15 +53,12 @@ a = Analysis(
         # ===== Python 표준 라이브러리 (불필요) =====
         'tkinter', '_tkinter',
         'unittest', 'test',
-        'email', 'html', 'http', 'xml', 'xmlrpc',
-        'pydoc', 'doctest', 'difflib',
-        'calendar', 'pdb', 'profile', 'cProfile',
+        'pydoc', 'doctest',
+        'pdb', 'profile', 'cProfile',
         'distutils', 'setuptools', 'pkg_resources', 'pip',
         'ensurepip', 'venv', 'lib2to3',
-        'asyncio', 'concurrent', 'multiprocessing',
-        'ctypes.test', 'sqlite3', 'bz2', 'lzma',
+        'ctypes.test',
         'ftplib', 'imaplib', 'nntplib', 'poplib', 'smtplib', 'telnetlib',
-        'ssl', 'hashlib', 'hmac', 'secrets',
         'curses', 'tty', 'pty', 'termios',
 
         # ===== 데이터 과학 라이브러리 =====
@@ -173,11 +170,11 @@ exe = EXE(
     name='LightweightViewer',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,  # 심볼 제거 (용량 감소)
-    upx=True,  # UPX 압축 활성화
-    upx_exclude=['Qt*.dll', 'PySide6*.pyd'],  # Qt DLL은 UPX 제외 (안정성)
+    strip=False,  # strip 비활성화 (안정성)
+    upx=False,  # UPX 비활성화 (python311.dll 충돌 방지)
+    upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # 콘솔 창 숨김 (릴리스 모드)
+    console=False,  # 콘솔 창 숨김
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

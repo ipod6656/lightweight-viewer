@@ -102,9 +102,6 @@ a = Analysis(
         'PySide6.QtPdf', 'PySide6.QtPdfWidgets',
         'PySide6.QtOpenGL', 'PySide6.QtOpenGLWidgets',
         'PySide6.QtDBus', 'PySide6.QtVirtualKeyboard',
-
-        # shiboken 디버그/불필요
-        'shiboken6.Shiboken',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
